@@ -1,0 +1,22 @@
+cd ~/Ekspedisiku
+python3.10 << 'EOF'
+from app import app, db
+from models import Pengiriman
+from utils import generate_barcode
+import os
+
+with app.app_context():
+    # Ambil semua pengiriman yang barcode_image kosong atau filenya tidak ada
+    pengiriman_list = Pengiriman.query.all()
+    created = 0
+    for p in pengiriman_list:
+        # Jika barcode_image kosong, atau filenya tidak ada di static/
+        if not p.barcode_image or not os.path.exists(f'static/{p.barcode_image}'):
+            try:
+                p.barcode_image = generate_barcode(p.nomor_resi)
+                created += 1
+            except Exception as e:
+                print(f"Gagal buat barcode untuk {p.nomor_resi}: {e}")
+    db.session.commit()
+    print(f"✅ {created} barcode baru berhasil dibuat.")
+EOF
