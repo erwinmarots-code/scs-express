@@ -19,20 +19,34 @@ from utils import (
 from sqlalchemy import extract, func, or_
 import pandas as pd
 
-# ---------- INISIALISASI APLIKASI ----------
+# ---------- INISIALISASI APLIKASI & PATH ----------
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'rahasia-super-kuat')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
-    'DATABASE_URL', f"sqlite:///{os.path.join(basedir, 'database.db')}"
-)
+
+# --- LOGIKA MEMILIH DATABASE ASLI (120KB) ---
+instance_db = os.path.join(basedir, 'instance', 'database.db')
+root_db = os.path.join(basedir, 'database.db')
+
+if os.path.exists(instance_db) and os.path.getsize(instance_db) > 10000:
+    selected_db = instance_db
+elif os.path.exists(root_db) and os.path.getsize(root_db) > 10000:
+    selected_db = root_db
+elif os.path.exists(instance_db):
+    selected_db = instance_db
+else:
+    selected_db = root_db
+
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', f"sqlite:///{selected_db}")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'uploads')
 
-# Buat folder yang dibutuhkan jika belum ada
+# Buat semua folder yang diperlukan jika belum ada
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(os.path.join(basedir, 'exports'), exist_ok=True)
+os.makedirs(os.path.join(basedir, 'instance'), exist_ok=True)
+os.makedirs(os.path.join(basedir, 'static', 'barcodes'), exist_ok=True)
 
 db.init_app(app)
 
@@ -76,14 +90,13 @@ with app.app_context():
     Settings.get()
 
 
-# ---------- HEALTH CHECK (UNTUK CONTAINER & CLOUD DEPLOY) ----------
+# ---------- HEALTH CHECK (WAJIB UNTUK SNAPDEPLOY/CONTAINER) ----------
 @app.route('/health')
 @app.route('/healthz')
 def health_check():
-    """Endpoint untuk pemeriksaan kesehatan container/load balancer."""
     return jsonify({
         "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat()
+        "database": os.path.basename(selected_db)
     }), 200
 
 
@@ -157,7 +170,7 @@ def dashboard():
                            total_free_ship=total_free_ship)
 
 
-# ---------- PENGIRIMAN / INPUT BARANG ----------
+# ---------- INPUT PENGIRIMAN ----------
 @app.route('/input', methods=['GET', 'POST'])
 @login_required
 @role_required(['admin', 'petugas', 'kurir'])
@@ -281,6 +294,7 @@ def input_barang():
                            to_date=to_date)
 
 
+# ---------- DATA BARANG ----------
 @app.route('/data')
 @login_required
 @role_required(['admin'])
@@ -572,7 +586,7 @@ def laporan():
                            biaya_list=biaya_list)
 
 
-# ---------- TRANSAKSI PELANGGAN & EXPORT KEUANGAN ----------
+# ---------- EXPORT KEUANGAN ----------
 @app.route('/export_keuangan')
 @login_required
 @role_required(['admin'])
@@ -1127,7 +1141,6 @@ def delete_user(id):
 
 # ---------- ENTRY POINT RUNNER ----------
 if __name__ == '__main__':
-    # Membaca port dari environment (default: 5000) dan bind ke 0.0.0.0
     port = int(os.environ.get('PORT', 5000))
     debug_mode = os.environ.get('FLASK_ENV') == 'development'
     app.run(host='0.0.0.0', port=port, debug=debug_mode)
