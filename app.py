@@ -19,19 +19,32 @@ from utils import (
 from sqlalchemy import extract, func, or_
 import pandas as pd
 
+# ---------- INISIALISASI APLIKASI ----------
+basedir = os.path.abspath(os.path.dirname(__file__))
+
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'rahasia-super-kuat'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
-app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'rahasia-super-kuat')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
+    'DATABASE_URL', f"sqlite:///{os.path.join(basedir, 'database.db')}"
+)
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'uploads')
+
+# Buat folder yang dibutuhkan jika belum ada
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(os.path.join(basedir, 'exports'), exist_ok=True)
+
 db.init_app(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
 
 # ---------- DECORATOR ROLE ----------
 def role_required(roles):
@@ -45,10 +58,12 @@ def role_required(roles):
         return decorated_function
     return decorator
 
+
 # ---------- CONTEXT PROCESSOR ----------
 @app.context_processor
 def inject_settings():
     return dict(get_settings=Settings.get)
+
 
 # ---------- INISIALISASI DATABASE ----------
 with app.app_context():
@@ -60,7 +75,19 @@ with app.app_context():
         db.session.commit()
     Settings.get()
 
-# ---------- ROUTES ----------
+
+# ---------- HEALTH CHECK (UNTUK CONTAINER & CLOUD DEPLOY) ----------
+@app.route('/health')
+@app.route('/healthz')
+def health_check():
+    """Endpoint untuk pemeriksaan kesehatan container/load balancer."""
+    return jsonify({
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat()
+    }), 200
+
+
+# ---------- ROUTES AUTENTIKASI ----------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -75,12 +102,15 @@ def login():
             flash('Username atau password salah')
     return render_template('login.html', form=form)
 
+
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
     return redirect(url_for('login'))
 
+
+# ---------- DASHBOARD ----------
 @app.route('/')
 @login_required
 def dashboard():
@@ -126,6 +156,8 @@ def dashboard():
                            free_ship_list=free_ship_list,
                            total_free_ship=total_free_ship)
 
+
+# ---------- PENGIRIMAN / INPUT BARANG ----------
 @app.route('/input', methods=['GET', 'POST'])
 @login_required
 @role_required(['admin', 'petugas', 'kurir'])
@@ -248,6 +280,7 @@ def input_barang():
                            from_date=from_date,
                            to_date=to_date)
 
+
 @app.route('/data')
 @login_required
 @role_required(['admin'])
@@ -269,6 +302,7 @@ def data_barang():
             pass
     pengiriman_list = query.order_by(Pengiriman.tgl_pickup.desc(), Pengiriman.created_at.desc()).all()
     return render_template('data_barang.html', data=pengiriman_list)
+
 
 @app.route('/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -329,7 +363,10 @@ def edit_barang(id):
         pengiriman.ppn = form.ppn.data
         pengiriman.asuransi = form.asuransi.data
         pengiriman.biaya_packing = form.biaya_packing.data
-        pengiriman.total_biaya = hitung_total(form.berat_kg.data, form.tarif_per_kg.data, form.ppn.data, form.asuransi.data, form.biaya_packing.data)
+        pengiriman.total_biaya = hitung_total(
+            form.berat_kg.data, form.tarif_per_kg.data,
+            form.ppn.data, form.asuransi.data, form.biaya_packing.data
+        )
         pengiriman.metode_pembayaran = form.metode_pembayaran.data
         pengiriman.keterangan = form.keterangan.data
         db.session.commit()
@@ -342,6 +379,7 @@ def edit_barang(id):
         return redirect(url_for('data_barang'))
     return render_template('edit_barang.html', form=form, pengiriman=pengiriman)
 
+
 @app.route('/hapus/<int:id>')
 @login_required
 @role_required(['admin'])
@@ -351,6 +389,7 @@ def hapus_barang(id):
     db.session.commit()
     flash('Data berhasil dihapus')
     return redirect(url_for('data_barang'))
+
 
 @app.route('/export')
 @login_required
@@ -367,6 +406,7 @@ def export_data():
         return redirect(url_for('data_barang'))
     return send_file(filepath, as_attachment=True)
 
+
 @app.route('/import', methods=['GET', 'POST'])
 @login_required
 @role_required(['admin'])
@@ -378,7 +418,6 @@ def import_data():
             return redirect(request.url)
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
         file.save(filepath)
         try:
             added = import_from_excel(filepath)
@@ -399,6 +438,7 @@ def import_data():
         return redirect(url_for('data_barang'))
     return render_template('import.html')
 
+
 # ---------- PELANGGAN ----------
 @app.route('/pelanggan')
 @login_required
@@ -406,6 +446,7 @@ def import_data():
 def pelanggan_list():
     pelanggan = Pelanggan.query.order_by(Pelanggan.tipe, Pelanggan.nama).all()
     return render_template('pelanggan_list.html', pelanggan=pelanggan)
+
 
 @app.route('/pelanggan/input', methods=['GET', 'POST'])
 @login_required
@@ -423,6 +464,7 @@ def input_pelanggan():
         flash('Pelanggan berhasil ditambahkan')
         return redirect(url_for('pelanggan_list'))
     return render_template('input_pelanggan.html', form=form)
+
 
 @app.route('/pelanggan/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -442,6 +484,7 @@ def edit_pelanggan(id):
         return redirect(url_for('pelanggan_list'))
     return render_template('edit_pelanggan.html', form=form, pelanggan=pelanggan)
 
+
 @app.route('/get_pelanggan/<int:id>')
 @login_required
 def get_pelanggan(id):
@@ -453,6 +496,7 @@ def get_pelanggan(id):
         'no_telp': pelanggan.no_telp or '',
         'kota': pelanggan.kode_kota or ''
     })
+
 
 # ---------- LAPORAN ----------
 @app.route('/laporan')
@@ -500,15 +544,15 @@ def laporan():
     laba_rugi = 0
     biaya_list = []
     if current_user.role == 'admin':
-        uang_masuk = db.session.query(func.sum(Pengiriman.total_biaya)).filter(
+        uang_masuk_query = db.session.query(func.sum(Pengiriman.total_biaya)).filter(
             Pengiriman.status == 'sukses',
             Pengiriman.verified == True
         )
         if tgl_mulai:
-            uang_masuk = uang_masuk.filter(Pengiriman.tgl_pickup >= tgl_mulai_date)
+            uang_masuk_query = uang_masuk_query.filter(Pengiriman.tgl_pickup >= tgl_mulai_date)
         if tgl_akhir:
-            uang_masuk = uang_masuk.filter(Pengiriman.tgl_pickup <= tgl_akhir_date)
-        uang_masuk = uang_masuk.scalar() or 0
+            uang_masuk_query = uang_masuk_query.filter(Pengiriman.tgl_pickup <= tgl_akhir_date)
+        uang_masuk = uang_masuk_query.scalar() or 0
 
         query_biaya = BiayaOperasional.query
         if tgl_mulai:
@@ -527,20 +571,15 @@ def laporan():
                            laba_rugi=laba_rugi,
                            biaya_list=biaya_list)
 
-# ---------- TRANSAKSI PELANGGAN ----------
+
+# ---------- TRANSAKSI PELANGGAN & EXPORT KEUANGAN ----------
 @app.route('/export_keuangan')
 @login_required
 @role_required(['admin'])
 def export_keuangan():
-    """
-    Export laporan keuangan (uang masuk, biaya operasional, laba/rugi)
-    ke file Excel dengan tiga sheet: Ringkasan, Biaya Operasional, Pemasukan.
-    Parameter query: tgl_mulai, tgl_akhir (format YYYY-MM-DD).
-    """
     tgl_mulai = request.args.get('tgl_mulai')
     tgl_akhir = request.args.get('tgl_akhir')
 
-    # Konversi string tanggal ke objek datetime (jika ada)
     tgl_mulai_date = None
     tgl_akhir_date = None
     if tgl_mulai:
@@ -556,7 +595,6 @@ def export_keuangan():
             flash('Format tanggal akhir tidak valid')
             return redirect(url_for('laporan'))
 
-    # 1. Ambil data uang masuk: pengiriman sukses dan sudah diverifikasi
     query_masuk = Pengiriman.query.filter(
         Pengiriman.status == 'sukses',
         Pengiriman.verified == True
@@ -569,7 +607,6 @@ def export_keuangan():
     pemasukan_list = query_masuk.order_by(Pengiriman.tgl_pickup.desc()).all()
     uang_masuk = sum(p.total_biaya for p in pemasukan_list) if pemasukan_list else 0
 
-    # 2. Ambil data biaya operasional
     query_biaya = BiayaOperasional.query
     if tgl_mulai_date:
         query_biaya = query_biaya.filter(BiayaOperasional.tanggal >= tgl_mulai_date)
@@ -579,11 +616,8 @@ def export_keuangan():
     biaya_list = query_biaya.order_by(BiayaOperasional.tanggal.desc()).all()
     biaya_total = sum(b.jumlah for b in biaya_list) if biaya_list else 0
 
-    # 3. Hitung laba/rugi
     laba_rugi = uang_masuk - biaya_total
 
-    # 4. Siapkan DataFrame untuk setiap sheet Excel
-    # Sheet Ringkasan
     summary_data = [
         {'Keterangan': 'Uang Masuk (Sukses & Diverifikasi)', 'Jumlah': uang_masuk},
         {'Keterangan': 'Total Biaya Operasional', 'Jumlah': biaya_total},
@@ -591,7 +625,6 @@ def export_keuangan():
     ]
     df_summary = pd.DataFrame(summary_data)
 
-    # Sheet Biaya Operasional
     biaya_data = []
     for b in biaya_list:
         biaya_data.append({
@@ -602,7 +635,6 @@ def export_keuangan():
         })
     df_biaya = pd.DataFrame(biaya_data, columns=['Tanggal', 'Jenis', 'Keterangan', 'Jumlah'])
 
-    # Sheet Pemasukan (detail pengiriman sukses yang sudah diverifikasi)
     pemasukan_data = []
     for p in pemasukan_list:
         pemasukan_data.append({
@@ -614,7 +646,6 @@ def export_keuangan():
         })
     df_pemasukan = pd.DataFrame(pemasukan_data, columns=['No Resi', 'Tanggal Pickup', 'Pengirim', 'Penerima', 'Total Biaya'])
 
-    # 5. Buat file Excel di memori (tanpa menyimpan ke disk)
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df_summary.to_excel(writer, sheet_name='Ringkasan', index=False)
@@ -622,13 +653,13 @@ def export_keuangan():
         df_pemasukan.to_excel(writer, sheet_name='Pemasukan', index=False)
     output.seek(0)
 
-    # 6. Kirim file Excel sebagai attachment
     return send_file(
         output,
         as_attachment=True,
         download_name='laporan_keuangan.xlsx',
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
+
 
 # ---------- SETTINGS ----------
 @app.route('/settings', methods=['GET', 'POST'])
@@ -649,6 +680,7 @@ def settings():
         return redirect(url_for('settings'))
     return render_template('settings.html', form=form)
 
+
 @app.route('/change_password', methods=['GET', 'POST'])
 @login_required
 def change_password():
@@ -665,6 +697,7 @@ def change_password():
             flash('Password berhasil diubah')
             return redirect(url_for('dashboard'))
     return render_template('change_password.html', form=form)
+
 
 # ---------- CETAK RESI ----------
 @app.route('/cetak_resi', methods=['GET', 'POST'])
@@ -715,6 +748,7 @@ def cetak_resi():
     pelanggan_list = Pelanggan.query.all()
     return render_template('cetak_resi.html', pengiriman=pengiriman, pelanggan_list=pelanggan_list)
 
+
 # ---------- INVOICE ----------
 @app.route('/invoice')
 @login_required
@@ -726,6 +760,7 @@ def invoice():
                            semua_pelanggan=semua_pelanggan,
                            current_month=now.month,
                            current_year=now.year)
+
 
 @app.route('/cetak_invoice')
 @login_required
@@ -793,6 +828,7 @@ def cetak_invoice():
                            bulan=bulan,
                            tahun=tahun)
 
+
 # ---------- UPDATE STATUS ----------
 @app.route('/update_status/<int:id>', methods=['POST'])
 @login_required
@@ -808,6 +844,7 @@ def update_status(id):
         db.session.commit()
         flash(f'Status resi {pengiriman.nomor_resi} diubah menjadi {new_status}')
     return redirect(url_for('laporan'))
+
 
 @app.route('/update_status_multiple', methods=['POST'])
 @login_required
@@ -831,6 +868,7 @@ def update_status_multiple():
     flash(f'{updated} pengiriman berhasil diupdate menjadi {status_baru}')
     return redirect(url_for('laporan'))
 
+
 # ---------- VERIFIKASI ----------
 @app.route('/verifikasi_ongkir/<int:id>')
 @login_required
@@ -842,6 +880,7 @@ def verifikasi_ongkir(id):
     flash(f'Setoran resi {pengiriman.nomor_resi} sudah diverifikasi.')
     return redirect(url_for('setoran_ongkir'))
 
+
 @app.route('/verifikasi_retur/<int:id>')
 @login_required
 @role_required(['admin'])
@@ -851,6 +890,7 @@ def verifikasi_retur(id):
     db.session.commit()
     flash(f'Retur resi {pengiriman.nomor_resi} sudah diverifikasi.')
     return redirect(url_for('setoran_ongkir', tab='retur'))
+
 
 @app.route('/verifikasi_ongkir_multiple', methods=['POST'])
 @login_required
@@ -865,6 +905,7 @@ def verifikasi_ongkir_multiple():
     flash(f'{len(ids)} setoran berhasil diverifikasi.')
     return redirect(url_for('setoran_ongkir'))
 
+
 @app.route('/verifikasi_retur_multiple', methods=['POST'])
 @login_required
 @role_required(['admin'])
@@ -877,6 +918,7 @@ def verifikasi_retur_multiple():
     db.session.commit()
     flash(f'{len(ids)} retur berhasil diverifikasi.')
     return redirect(url_for('setoran_ongkir'))
+
 
 # ---------- BIAYA OPERASIONAL ----------
 @app.route('/biaya_operasional', methods=['GET', 'POST'])
@@ -898,6 +940,7 @@ def biaya_operasional():
     biaya_list = BiayaOperasional.query.order_by(BiayaOperasional.tanggal.desc()).limit(30).all()
     return render_template('biaya_operasional.html', form=form, biaya_list=biaya_list)
 
+
 @app.route('/biaya_operasional/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
 @role_required(['admin'])
@@ -914,6 +957,7 @@ def edit_biaya(id):
         return redirect(url_for('biaya_operasional'))
     return render_template('edit_biaya.html', form=form, biaya=biaya)
 
+
 @app.route('/biaya_operasional/hapus/<int:id>', methods=['POST'])
 @login_required
 @role_required(['admin'])
@@ -923,6 +967,7 @@ def hapus_biaya(id):
     db.session.commit()
     flash('Biaya operasional berhasil dihapus')
     return redirect(url_for('biaya_operasional'))
+
 
 @app.route('/import_biaya', methods=['POST'])
 @login_required
@@ -934,7 +979,6 @@ def import_biaya():
         return redirect(url_for('biaya_operasional'))
     filename = secure_filename(file.filename)
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     file.save(filepath)
     try:
         added = import_biaya_from_excel(filepath)
@@ -942,6 +986,7 @@ def import_biaya():
     except Exception as e:
         flash(f'Gagal mengimpor: {str(e)}')
     return redirect(url_for('biaya_operasional'))
+
 
 # ---------- SETORAN ONGKIR ----------
 @app.route('/setoran_ongkir')
@@ -1006,6 +1051,7 @@ def setoran_ongkir():
                            pelanggan_list=pelanggan_list,
                            tab=tab)
 
+
 # ---------- DAILY DELIVERY ----------
 @app.route('/daily_delivery')
 @login_required
@@ -1032,6 +1078,7 @@ def daily_delivery():
                            total_credit=total_credit,
                            total_free_ship=total_free_ship)
 
+
 # ---------- MANAJEMEN USER ----------
 @app.route('/users')
 @login_required
@@ -1039,6 +1086,7 @@ def daily_delivery():
 def user_list():
     users = User.query.all()
     return render_template('user_list.html', users=users)
+
 
 @app.route('/users/add', methods=['GET', 'POST'])
 @login_required
@@ -1062,6 +1110,7 @@ def add_user():
 
     return render_template('add_user.html')
 
+
 @app.route('/users/delete/<int:id>')
 @login_required
 @role_required(['admin'])
@@ -1075,5 +1124,10 @@ def delete_user(id):
     flash('User berhasil dihapus')
     return redirect(url_for('user_list'))
 
+
+# ---------- ENTRY POINT RUNNER ----------
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Membaca port dari environment (default: 5000) dan bind ke 0.0.0.0
+    port = int(os.environ.get('PORT', 5000))
+    debug_mode = os.environ.get('FLASK_ENV') == 'development'
+    app.run(host='0.0.0.0', port=port, debug=debug_mode)
