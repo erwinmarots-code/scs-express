@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Cetak Resi - SCS EkspedisiKu</title>
+  <style>
+    @page { size: 215mm 110mm; margin: 0; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 10px;
+      width: 215mm;
+      height: 110mm;
+      overflow: hidden;
+    }
+    .resi-box {
+      border: 1px solid #000;
+      padding: 2mm;
+      width: 100%;
+      height: 100%;
+      page-break-after: always;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .header {
+      text-align: center;
+      font-weight: bold;
+      font-size: 16px;
+      margin-bottom: 0.5mm;
+    }
+    .top-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 0.5mm;
+    }
+    .logo img { height: auto; width: 34mm; }
+    .company-info { font-size: 7px; margin-top: 0.5mm; line-height: 1.2; }
+    .barcode { width: 54mm; height: 10mm; overflow: hidden; text-align: center; }
+    .barcode img { width: 54mm; display: block; }
+    .content-row { display: flex; gap: 2mm; flex: 1; margin-top: 1mm; }
+    .left-col, .right-col { flex: 1; }
+    table { width: 100%; border-collapse: collapse; margin-top: 0.3mm; font-size: 10px; }
+    td, th { padding: 0.3mm 0.6mm; border: 1px solid #ccc; }
+    .section-title { font-weight: bold; font-size: 11px; margin-top: 0.5mm; border-bottom: 1px solid #eee; }
+    .total-biaya { font-size: 12px; font-weight: bold; background: #f5f5f5; }
+    .ttd { display: flex; justify-content: space-between; margin-top: 2mm; font-size: 10px; }
+    .ttd-box { width: 25%; border-top: 1px dashed #000; padding-top: 0.5mm; text-align: center; }
+    .keterangan { margin-top: 1mm; border-top: 1px solid #ccc; padding-top: 0.5mm; }
+    .nama-perusahaan { font-weight: bold; }
+    .no-print { display: none; }
+    @media screen {
+      .no-print { display: block; text-align: center; margin: 5mm 0; font-size: 12px; }
+      body { background: #f5f5f5; padding: 5mm; height: auto; width: auto; }
+      .resi-box { margin-bottom: 3mm; height: auto; page-break-after: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print">
+    <button onclick="window.print()" style="padding: 6px 12px;">🖨️ Cetak Halaman</button>
+    <p><small>Atur kertas: 215x110 mm, margin: none</small></p>
+  </div>
+
+  {% for p in daftar %}
+  <div class="resi-box">
+    <div>
+      <div class="top-row">
+        <div>
+          <div class="logo">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="SCS">
+          </div>
+          {% set s = get_settings() %}
+          <div class="company-info">
+            {{ s.company_address }}<br>
+            Telp: {{ s.company_phone }}
+          </div>
+        </div>
+        <div class="barcode">
+          <img src="{{ url_for('static', filename=p.barcode_image) }}" alt="barcode">
+        </div>
+      </div>
+
+      <div class="header">BUKTI PENGIRIMAN</div>
+
+      <table style="margin-bottom: 0.5mm;">
+        <tr>
+          <td width="10%"><strong>No. Resi</strong></td>
+          <td width="15%" style="font-weight:bold; color:red; font-size:12px;">{{ p.nomor_resi }}</td>
+          <td width="6%"><strong>Asal</strong></td>
+          <td width="8%">{{ p.kota_asal }}</td>
+          <td width="6%"><strong>Tujuan</strong></td>
+          <td width="8%">{{ p.kota_tujuan }}</td>
+          <td width="8%"><strong>Tanggal</strong></td>
+          <td width="12%">{{ p.tgl_pickup.strftime('%d/%m/%Y') if p.tgl_pickup else '' }}</td>
+          <td width="8%"><strong>Petugas</strong></td>
+          <td width="19%">{{ p.petugas_pickup }}</td>
+        </tr>
+      </table>
+
+      <div class="content-row">
+        <!-- Kolom Kiri: Pengirim & Penerima -->
+        <div class="left-col">
+          <div class="section-title">PENGIRIM</div>
+          <table>
+            <tr><td width="25%">Nama</td><td><span class="nama-perusahaan">{{ p.pengirim.nama if p.pengirim else '-' }}</span></td></tr>
+            {% if p.pengirim and p.pengirim.perusahaan %}
+            <tr><td>Perusahaan</td><td><span class="nama-perusahaan">{{ p.pengirim.perusahaan }}</span></td></tr>
+            {% endif %}
+            <tr><td>Alamat</td><td>{{ p.pengirim.alamat if p.pengirim and p.pengirim.alamat else '-' }}</td></tr>
+            {% if p.pengirim and p.pengirim.no_telp %}
+            <tr><td>Telp</td><td>{{ p.pengirim.no_telp }}</td></tr>
+            {% endif %}
+            {% if p.pengirim and p.pengirim.kode_kota %}
+            <tr><td>Kota</td><td>{{ p.pengirim.kode_kota }}</td></tr>
+            {% endif %}
+          </table>
+
+          <div class="section-title" style="margin-top: 1mm;">PENERIMA</div>
+          <table>
+            <tr><td width="25%">Nama</td><td><span class="nama-perusahaan">{{ p.penerima.nama if p.penerima else '-' }}</span></td></tr>
+            {% if p.penerima and p.penerima.perusahaan %}
+            <tr><td>Perusahaan</td><td><span class="nama-perusahaan">{{ p.penerima.perusahaan }}</span></td></tr>
+            {% endif %}
+            <tr><td>Alamat</td><td>{{ p.penerima.alamat if p.penerima and p.penerima.alamat else '-' }}</td></tr>
+            {% if p.penerima and p.penerima.no_telp %}
+            <tr><td>Telp</td><td>{{ p.penerima.no_telp }}</td></tr>
+            {% endif %}
+            {% if p.penerima and p.penerima.kode_kota %}
+            <tr><td>Kota</td><td>{{ p.penerima.kode_kota }}</td></tr>
+            {% endif %}
+          </table>
+        </div>
+
+        <!-- Kolom Kanan: Detail & Biaya -->
+        <div class="right-col">
+          <div class="section-title">DETAIL PENGIRIMAN</div>
+          <table>
+            <tr><td width="35%">Jenis Paket</td><td>{{ p.jenis_barang }}</td></tr>
+            <tr><td>Koli</td><td>{{ p.jumlah_koli }}</td></tr>
+            <tr><td>Kilo</td><td>{{ p.berat_kg }} kg</td></tr>
+            <tr><td>Service</td><td>{{ p.jenis_service }}</td></tr>
+            <tr><td>Pembayaran</td><td>{{ p.metode_pembayaran }}</td></tr>
+          </table>
+
+          <div class="section-title" style="margin-top: 1mm;">RINCIAN BIAYA</div>
+          <table>
+            <tr><td width="35%">Tarif/kg</td><td>Rp {{ "{:,.0f}".format(p.tarif_per_kg) }}</td></tr>
+            <tr><td>PPN</td><td>Rp {{ "{:,.0f}".format(p.ppn) }}</td></tr>
+            <tr><td>Disc %</td><td>Rp {{ "{:,.0f}".format(p.asuransi) }}</td></tr>
+            <tr><td>Packing</td><td>Rp {{ "{:,.0f}".format(p.biaya_packing) }}</td></tr>
+            <tr class="total-biaya">
+              <td>TOTAL</td>
+              <td>Rp {{ "{:,.0f}".format(p.total_biaya) }}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="keterangan">
+        <strong>Keterangan:</strong> {{ p.keterangan or '-' }}
+      </div>
+    </div>
+
+    <div class="ttd">
+      <div class="ttd-box">Pengirim</div>
+      <div class="ttd-box">Penerima</div>
+    </div>
+  </div>
+  {% endfor %}
+</body>
+</html>

@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}Setoran Ongkir{% endblock %}
+{% block content %}
+<h2>📤 Verifikasi Setoran & Retur</h2>
+
+<!-- Filter -->
+<form method="GET" class="row g-3 mb-4">
+  <div class="col-md-2">
+    <label class="form-label">Tgl Mulai</label>
+    <input type="date" name="tgl_mulai" class="form-control" value="{{ request.args.get('tgl_mulai', '') }}">
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Tgl Akhir</label>
+    <input type="date" name="tgl_akhir" class="form-control" value="{{ request.args.get('tgl_akhir', '') }}">
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Bulan</label>
+    <select name="bulan" class="form-select">
+      <option value="">-- Pilih --</option>
+      {% for i in range(1,13) %}
+      <option value="{{ i }}" {% if request.args.get('bulan') == i|string %}selected{% endif %}>{{ i }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Tahun</label>
+    <input type="number" name="tahun" class="form-control" value="{{ request.args.get('tahun', '') }}">
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Pelanggan</label>
+    <select name="pelanggan_id" class="form-select">
+      <option value="">-- Semua --</option>
+      {% for pl in pelanggan_list %}
+      <option value="{{ pl.id }}" {% if request.args.get('pelanggan_id') == pl.id|string %}selected{% endif %}>{{ pl.nama }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">No Resi</label>
+    <input type="text" name="no_resi" class="form-control" value="{{ request.args.get('no_resi', '') }}">
+  </div>
+  <input type="hidden" name="tab" value="{{ tab }}">
+  <div class="col-md-2 d-flex align-items-end">
+    <button type="submit" class="btn btn-danger w-100">Filter</button>
+  </div>
+</form>
+
+<!-- Tab -->
+<ul class="nav nav-tabs mb-4">
+  <li class="nav-item">
+    <a class="nav-link {% if tab == 'sukses' %}active{% endif %}" 
+       href="{{ url_for('setoran_ongkir', tab='sukses', tgl_mulai=request.args.get('tgl_mulai',''), tgl_akhir=request.args.get('tgl_akhir',''), bulan=request.args.get('bulan',''), tahun=request.args.get('tahun',''), pelanggan_id=request.args.get('pelanggan_id',''), no_resi=request.args.get('no_resi','')) }}">
+      Sukses (Belum Diverifikasi)
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if tab == 'retur' %}active{% endif %}" 
+       href="{{ url_for('setoran_ongkir', tab='retur', tgl_mulai=request.args.get('tgl_mulai',''), tgl_akhir=request.args.get('tgl_akhir',''), bulan=request.args.get('bulan',''), tahun=request.args.get('tahun',''), pelanggan_id=request.args.get('pelanggan_id',''), no_resi=request.args.get('no_resi','')) }}">
+      Free Ship. (Belum Diverifikasi)
+    </a>
+  </li>
+</ul>
+
+{% if tab == 'sukses' %}
+<form method="POST" action="{{ url_for('verifikasi_ongkir_multiple') }}">
+  <div class="row mb-3">
+    <div class="col-md-4">
+      <div class="card bg-success text-white">
+        <div class="card-body">
+          <h5>Total Ongkir Sukses (Belum Diverifikasi)</h5>
+          <p class="display-6">Rp {{ "{:,.0f}".format(total_ongkir_sukses) }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+      <button type="submit" class="btn btn-success">✔ Verifikasi Terpilih</button>
+    </div>
+  </div>
+
+  <table class="table table-striped table-hover">
+    <thead>
+      <tr>
+        <th><input type="checkbox" id="selectAllSukses"></th>
+        <th>Resi</th>
+        <th>Tanggal</th>
+        <th>Pengirim</th>
+        <th>Penerima</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in data_sukses %}
+      <tr>
+        <td><input type="checkbox" name="selected_ids" value="{{ p.id }}" class="sukses-check"></td>
+        <td>{{ p.nomor_resi }}</td>
+        <td>{{ p.tgl_pickup.strftime('%d/%m/%Y') if p.tgl_pickup else '-' }}</td>
+        <td>{{ p.pengirim.nama if p.pengirim else '-' }}</td>
+        <td>{{ p.penerima.nama if p.penerima else '-' }}</td>
+        <td>Rp {{ "{:,.0f}".format(p.total_biaya) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center">Tidak ada data.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</form>
+
+{% elif tab == 'retur' %}
+<form method="POST" action="{{ url_for('verifikasi_retur_multiple') }}">
+  <div class="row mb-3">
+    <div class="col-md-4">
+      <div class="card bg-danger text-white">
+        <div class="card-body">
+          <h5>Total Ongkir Free Ship. (Belum Diverifikasi)</h5>
+          <p class="display-6">Rp {{ "{:,.0f}".format(total_ongkir_retur) }}</p>
+          <small>Setelah diverifikasi, jumlah ini akan mengurangi pendapatan.</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+      <button type="submit" class="btn btn-warning">✔ Verifikasi Free Ship. Terpilih</button>
+    </div>
+  </div>
+
+  <table class="table table-striped table-hover">
+    <thead>
+      <tr>
+        <th><input type="checkbox" id="selectAllRetur"></th>
+        <th>Resi</th>
+        <th>Tanggal</th>
+        <th>Pengirim</th>
+        <th>Penerima</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in data_retur %}
+      <tr>
+        <td><input type="checkbox" name="selected_ids" value="{{ p.id }}" class="retur-check"></td>
+        <td>{{ p.nomor_resi }}</td>
+        <td>{{ p.tgl_pickup.strftime('%d/%m/%Y') if p.tgl_pickup else '-' }}</td>
+        <td>{{ p.pengirim.nama if p.pengirim else '-' }}</td>
+        <td>{{ p.penerima.nama if p.penerima else '-' }}</td>
+        <td>Rp {{ "{:,.0f}".format(p.total_biaya) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center">Tidak ada data.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</form>
+{% endif %}
+
+{% endblock %}
+{% block scripts %}
+<script>
+  $('#selectAllSukses').on('change', function() {
+    $('.sukses-check').prop('checked', this.checked);
+  });
+  $('#selectAllRetur').on('change', function() {
+    $('.retur-check').prop('checked', this.checked);
+  });
+</script>
+{% endblock %}

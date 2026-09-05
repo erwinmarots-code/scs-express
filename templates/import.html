@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Import Data{% endblock %}
+{% block content %}
+<h2>📥 Import Data Pengiriman dari Excel</h2>
+<div class="alert alert-info">
+  <strong>Format kolom yang diharapkan (nama kolom tidak harus persis, tetapi harus mengandung kata kunci):</strong><br>
+  <code>Nama Pengirim, Perusahaan Pengirim, Alamat Pengirim, No Telp Pengirim, 
+  Nama Penerima, Perusahaan Penerima, Alamat Penerima, No Telp Penerima,
+  Tgl Pickup (format: YYYY-MM-DD), Kota Asal, Kota Tujuan, Jenis Barang (paket/dokumen),
+  Koli, Kilo, Tarif/kg, PPN (opsional), Biaya Packing (opsional), Metode Pembayaran (cash/credit), Keterangan, Petugas Pickup (opsional), No Resi (opsional)</code><br>
+  <small>Contoh file Excel dapat diunduh <a href="#">di sini</a>.</small>
+</div>
+<form method="POST" enctype="multipart/form-data">
+  <div class="mb-3">
+    <label class="form-label">Pilih file Excel (.xlsx)</label>
+    <input type="file" name="file" class="form-control" accept=".xlsx" required>
+  </div>
+  <button type="submit" class="btn btn-success">Import</button>
+  <a href="{{ url_for('data_barang') }}" class="btn btn-secondary">Batal</a>
+</form>
+{% endblock %}

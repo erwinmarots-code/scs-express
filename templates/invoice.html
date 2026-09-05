@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Invoice Pelanggan{% endblock %}
+{% block content %}
+<div class="container-fluid px-0">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>🧾 Invoice Pelanggan</h2>
+  </div>
+
+  <!-- Filter Invoice -->
+  <form method="GET" action="{{ url_for('cetak_invoice') }}" class="row g-2 mb-4 bg-light p-3 rounded-3" target="_blank">
+    <div class="col-md-4">
+      <label class="form-label small mb-1">Pelanggan</label>
+      <select name="pelanggan_id" class="form-select form-select-sm" required>
+        <option value="">-- Pilih Pelanggan --</option>
+        {% for p in semua_pelanggan %}
+        <option value="{{ p.id }}">{{ p.nama }} ({{ p.tipe }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small mb-1">Bulan</label>
+      <select name="bulan" class="form-select form-select-sm">
+        {% for i in range(1,13) %}
+        <option value="{{ i }}" {% if i == current_month %}selected{% endif %}>{{ i }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small mb-1">Tahun</label>
+      <input type="number" name="tahun" class="form-control form-control-sm" value="{{ current_year }}">
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+      <button type="submit" class="btn btn-danger btn-sm w-100">Tampilkan</button>
+    </div>
+  </form>
+
+  <!-- Catatan -->
+  <div class="alert alert-info small">
+    <i class="bi bi-info-circle"></i> Pilih pelanggan dan periode, lalu klik <strong>Tampilkan</strong>. Invoice akan terbuka di tab baru.
+  </div>
+</div>
+{% endblock %}

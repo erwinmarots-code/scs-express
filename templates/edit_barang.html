@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Edit Pengiriman{% endblock %}
+{% block content %}
+<h2>✏️ Edit Pengiriman - {{ pengiriman.nomor_resi }}</h2>
+<form method="POST">
+  {{ form.hidden_tag() }}
+  <div class="row g-3">
+    <div class="col-md-4">
+      <label class="form-label">Nomor Resi</label>
+      {{ form.nomor_resi(class="form-control", placeholder="Kosongkan untuk auto") }}
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Kota Asal</label>
+      {{ form.kota_asal(class="form-control") }}
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Kota Tujuan</label>
+      {{ form.kota_tujuan(class="form-control") }}
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Tanggal Pickup</label>
+      {{ form.tgl_pickup(class="form-control", type="date") }}
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Petugas Pickup</label>
+      {{ form.petugas_pickup(class="form-control") }}
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Jenis Service</label>
+      {{ form.jenis_service(class="form-select") }}
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Jenis Barang</label>
+      {{ form.jenis_barang(class="form-select") }}
+    </div>
+
+    <!-- PENGIRIM -->
+    <div class="col-12"><h5>Pengirim</h5></div>
+    <div class="col-md-6">
+      <label class="form-label">Pilih Pengirim (jika sudah ada)</label>
+      {{ form.pengirim_id(class="form-select", id="pengirim_id_select") }}
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Atau isi data pengirim baru</label>
+      {{ form.pengirim_nama(class="form-control", placeholder="Nama Pengirim", id="pengirim_nama") }}
+    </div>
+    <div class="col-md-4">
+      {{ form.pengirim_perusahaan(class="form-control", placeholder="Perusahaan", id="pengirim_perusahaan") }}
+    </div>
+    <div class="col-md-4">
+      {{ form.pengirim_alamat(class="form-control", placeholder="Alamat", id="pengirim_alamat") }}
+    </div>
+    <div class="col-md-2">
+      {{ form.pengirim_no_telp(class="form-control", placeholder="No Telp", id="pengirim_no_telp") }}
+    </div>
+    <div class="col-md-2">
+      {{ form.pengirim_kota(class="form-control", placeholder="Kota", id="pengirim_kota") }}
+    </div>
+
+    <!-- PENERIMA -->
+    <div class="col-12"><h5>Penerima</h5></div>
+    <div class="col-md-6">
+      <label class="form-label">Pilih Penerima (jika sudah ada)</label>
+      {{ form.penerima_id(class="form-select", id="penerima_id_select") }}
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Atau isi data penerima baru</label>
+      {{ form.penerima_nama(class="form-control", placeholder="Nama Penerima", id="penerima_nama") }}
+    </div>
+    <div class="col-md-4">
+      {{ form.penerima_perusahaan(class="form-control", placeholder="Perusahaan", id="penerima_perusahaan") }}
+    </div>
+    <div class="col-md-4">
+      {{ form.penerima_alamat(class="form-control", placeholder="Alamat", id="penerima_alamat") }}
+    </div>
+    <div class="col-md-2">
+      {{ form.penerima_no_telp(class="form-control", placeholder="No Telp", id="penerima_no_telp") }}
+    </div>
+    <div class="col-md-2">
+      {{ form.penerima_kota(class="form-control", placeholder="Kota", id="penerima_kota") }}
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Jumlah Koli</label>
+      {{ form.jumlah_koli(class="form-control") }}
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Berat (kg)</label>
+      {{ form.berat_kg(class="form-control") }}
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Tarif per kg</label>
+      {{ form.tarif_per_kg(class="form-control") }}
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">PPN</label>
+      {{ form.ppn(class="form-control") }}
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Disc (%)</label>
+      {{ form.asuransi(class="form-control") }}
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Biaya Packing</label>
+      {{ form.biaya_packing(class="form-control") }}
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Metode Pembayaran</label>
+      {{ form.metode_pembayaran(class="form-select") }}
+    </div>
+    <div class="col-12">
+      <label class="form-label">Keterangan</label>
+      {{ form.keterangan(class="form-control", rows="2") }}
+    </div>
+  </div>
+  <button type="submit" class="btn btn-primary mt-3">Simpan Perubahan</button>
+  <a href="{{ url_for('data_barang') }}" class="btn btn-secondary mt-3">Batal</a>
+</form>
+
+{% block scripts %}
+<script>
+// Fungsi untuk mengambil data pelanggan via AJAX dan mengisi field
+function fillPelangganData(selectId, prefix) {
+    const select = document.getElementById(selectId);
+    select.addEventListener('change', function() {
+        const id = this.value;
+        if (id === '0' || id === 0) {
+            document.getElementById(prefix + '_nama').value = '';
+            document.getElementById(prefix + '_perusahaan').value = '';
+            document.getElementById(prefix + '_alamat').value = '';
+            document.getElementById(prefix + '_no_telp').value = '';
+            document.getElementById(prefix + '_kota').value = '';
+            return;
+        }
+        fetch(`/get_pelanggan/${id}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById(prefix + '_nama').value = data.nama || '';
+                document.getElementById(prefix + '_perusahaan').value = data.perusahaan || '';
+                document.getElementById(prefix + '_alamat').value = data.alamat || '';
+                document.getElementById(prefix + '_no_telp').value = data.no_telp || '';
+                document.getElementById(prefix + '_kota').value = data.kota || '';
+            })
+            .catch(err => console.error(err));
+    });
+}
+
+fillPelangganData('pengirim_id_select', 'pengirim');
+fillPelangganData('penerima_id_select', 'penerima');
+</script>
+{% endblock %}
+{% endblock %}

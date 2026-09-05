@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Daftar User{% endblock %}
+{% block content %}
+<h2>👤 Manajemen User</h2>
+<a href="{{ url_for('add_user') }}" class="btn btn-primary mb-3">➕ Tambah User</a>
+
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Username</th>
+      <th>Role</th>
+      <th>Aksi</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for u in users %}
+    <tr>
+      <td>{{ u.username }}</td>
+      <td>
+        <span class="badge bg-{{ 'primary' if u.role == 'admin' else 'info' if u.role == 'kurir' else 'warning' }}">
+          {{ u.role.capitalize() }}
+        </span>
+      </td>
+      <td>
+        {% if u.username != 'admin' %}
+        <a href="{{ url_for('delete_user', id=u.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Yakin hapus?')">Hapus</a>
+        {% else %}
+        <span class="text-muted">Admin Utama</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Edit Biaya Operasional{% endblock %}
+{% block content %}
+<h2>✏️ Edit Biaya Operasional</h2>
+<form method="POST">
+  {{ form.hidden_tag() }}
+  <div class="row g-3">
+    <div class="col-md-4">
+      {{ form.tanggal.label(class="form-label") }}
+      {{ form.tanggal(class="form-control", type="date") }}
+    </div>
+    <div class="col-md-4">
+      {{ form.keterangan.label(class="form-label") }}
+      {{ form.keterangan(class="form-control") }}
+    </div>
+    <div class="col-md-4">
+      {{ form.jumlah.label(class="form-label") }}
+      {{ form.jumlah(class="form-control") }}
+    </div>
+  </div>
+  <div class="mt-3">
+    <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+    <a href="{{ url_for('biaya_operasional') }}" class="btn btn-secondary">Batal</a>
+  </div>
+</form>
+{% endblock %}

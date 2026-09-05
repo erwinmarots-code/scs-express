@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Invoice - SCS EkspedisiKu</title>
+  <style>
+    @page { size: 215mm 330mm; margin: 8mm; }
+    body { font-family: Arial, sans-serif; font-size: 14px; margin: 0; }
+    .invoice-box { 
+      border: none;
+      padding: 6mm; 
+    }
+    
+    /* ===== HEADER ===== */
+    .header { 
+      display: flex; 
+      align-items: center; 
+      margin-bottom: 5mm;
+      border-bottom: 3px solid #1a3c6e;
+      padding-bottom: 3mm;
+    }
+    .header .logo-image { 
+      flex: 0 0 auto;
+      margin-right: 10mm;
+      text-align: center; /* rata tengah */
+    }
+    .header .logo-image img {
+      display: block;
+      max-height: 60px;
+      width: auto;
+      margin: 0 auto;
+    }
+    .company-name {
+      margin-top: 2mm;
+      font-weight: bold;
+      font-size: 16px;
+      color: #1a3c6e;
+      letter-spacing: 0.5px;
+    }
+    .company-address {
+      margin-top: 1mm;
+      font-size: 11px;
+      color: #555;
+      line-height: 1.4;
+      max-width: 60mm;
+      word-wrap: break-word;
+    }
+    .header .invoice-title { 
+      flex: 1; 
+      text-align: right;
+      padding-left: 10mm;
+    }
+    .header h2 { 
+      margin: 0; 
+      font-size: 26px; 
+      color: #1a3c6e;
+      letter-spacing: 2px;
+    }
+    .header p { margin: 4px 0 0 0; font-size: 14px; color: #555; }
+    
+    /* ===== INFO PELANGGAN ===== */
+    .info { display: flex; justify-content: space-between; margin-bottom: 5mm; }
+    .info div { width: 48%; }
+    
+    /* ===== TABEL ===== */
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin-top: 3mm;
+      table-layout: fixed;
+    }
+    th, td { 
+      border: 1px solid #000; 
+      padding: 2mm 2mm; 
+      font-size: 11px;
+      word-wrap: break-word;
+    }
+    th { background: #eee; font-weight: bold; text-align: center; }
+    
+    /* ===== TOTAL ROW ===== */
+    .total-row td { 
+      font-weight: bold; 
+      background: #f5f5f5; 
+      padding: 1.5mm 2mm;
+    }
+    .total-row .grand-total-label {
+      text-align: right;
+      font-size: 12px;
+      color: #1a3c6e;
+    }
+    .grand-total-value {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2mm;
+      gap: 4px;
+    }
+    .grand-total-value .rp-label {
+      font-weight: bold;
+      color: #1a3c6e;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+    .grand-total-value .amount {
+      font-weight: bold;
+      text-align: right;
+      font-size: 12px;
+      color: #1a3c6e;
+      flex: 1;
+    }
+    
+    /* ===== KOLOM TOTAL ===== */
+    .total-column {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2mm;
+      gap: 4px;
+    }
+    .total-column .rp-label {
+      font-weight: bold;
+      color: #1a3c6e;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+    .total-column .amount {
+      font-weight: bold;
+      text-align: right;
+      font-size: 11px;
+      flex: 1;
+    }
+    
+    /* ===== KOLOM BERAT ===== */
+    .berat-column {
+      text-align: center;
+      white-space: nowrap;
+    }
+    .berat-column .kg {
+      font-weight: normal;
+      color: #555;
+      font-size: 10px;
+      margin-left: 1px;
+    }
+    
+    /* ===== KOLOM KETERANGAN ===== */
+    .keterangan-column {
+      text-align: left;
+      font-size: 10px;
+      word-wrap: break-word;
+    }
+    
+    /* ===== FOOTER ===== */
+    .footer { margin-top: 8mm; text-align: right; font-size: 14px; }
+    
+    /* ===== UTILITY ===== */
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    
+    /* ===== TOMBOL CETAK ===== */
+    .no-print { text-align: center; margin-bottom: 5mm; }
+    @media print {
+      .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOMBOL CETAK -->
+  <div class="no-print">
+    <button onclick="window.print()" style="padding: 8px 20px; font-size: 14px; cursor: pointer; background: #1a3c6e; color: white; border: none; border-radius: 4px;">
+      🖨️ Cetak Invoice
+    </button>
+    <button onclick="window.close()" style="padding: 8px 20px; font-size: 14px; cursor: pointer; margin-left: 5px; background: #dc3545; color: white; border: none; border-radius: 4px;">
+      ✕ Tutup
+    </button>
+  </div>
+
+  <div class="invoice-box">
+
+    <!-- ===== HEADER ===== -->
+    <div class="header">
+      <div class="logo-image">
+        <img src="{{ url_for('static', filename='logo.png') }}" 
+             alt="SCS EkspedisiKu" 
+             style="height: 60px; width: auto; max-height: 60px;">
+        <div class="company-name">SCS EkspedisiKu</div>
+        <div class="company-address">
+          {% set settings = get_settings() %}
+          {% if settings.company_address %}
+            {{ settings.company_address }}
+          {% else %}
+            Alamat belum diatur
+          {% endif %}
+        </div>
+      </div>
+      <div class="invoice-title">
+        <h2>INVOICE</h2>
+        <p><strong>No. Invoice:</strong> INV-{{ pelanggan.id }}-{{ "{:02d}".format(bulan) }}-{{ tahun }}</p>
+      </div>
+    </div>
+
+    <!-- ===== INFO PELANGGAN ===== -->
+    <div class="info">
+      <div>
+        <strong>Kepada:</strong><br>
+        <strong>{{ pelanggan.nama }}</strong><br>
+        {% if pelanggan.perusahaan %}
+          {{ pelanggan.perusahaan }}<br>
+        {% endif %}
+        {% if pelanggan.alamat %}
+          {{ pelanggan.alamat }}<br>
+        {% endif %}
+        {% if pelanggan.no_telp %}
+          Telp: {{ pelanggan.no_telp }}
+        {% endif %}
+      </div>
+      <div style="text-align:right;">
+        <strong>Periode:</strong> {{ periode }}<br>
+        <strong>Tanggal Cetak:</strong> {{ now.strftime('%d/%m/%Y %H:%M') }}<br>
+        <strong>Total Resi:</strong> {{ pengiriman|length }} transaksi
+      </div>
+    </div>
+
+    <!-- ===== TABEL DATA PENGIRIMAN ===== -->
+    <table>
+      <thead>
+        <tr>
+          <th style="width:10%;">No. Resi</th>
+          <th style="width:10%;">Tgl Pickup</th>
+          <th style="width:18%;">Pengirim</th>
+          <th style="width:10%;">Kota Asal</th>
+          <th style="width:10%;">Kota Tujuan</th>
+          <th style="width:10%;">Jenis</th>
+          <th style="width:7%;">Berat</th>
+          <th style="width:12%;">Keterangan</th>
+          <th style="width:13%;">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in pengiriman %}
+        <tr>
+          <td class="text-center"><strong>{{ item.nomor_resi }}</strong></td>
+          <td class="text-center">{{ item.tgl_pickup.strftime('%d/%m/%Y') if item.tgl_pickup else '-' }}</td>
+          <td>{{ item.pengirim.nama if item.pengirim else '-' }}</td>
+          <td class="text-center">{{ item.kota_asal or '-' }}</td>
+          <td class="text-center">{{ item.kota_tujuan or '-' }}</td>
+          <td class="text-center">{{ item.jenis_barang or '-' }}</td>
+          <td class="berat-column">
+            {{ item.berat_kg or 0 }} <span class="kg">Kg</span>
+          </td>
+          <td class="keterangan-column">{{ item.keterangan or '-' }}</td>
+          <td>
+            <div class="total-column">
+              <span class="rp-label">Rp</span>
+              <span class="amount">{{ "{:,.0f}".format(item.total_biaya or 0) }}</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td colspan="8" class="grand-total-label">
+            <strong>GRAND TOTAL</strong>
+          </td>
+          <td>
+            <div class="grand-total-value">
+              <span class="rp-label">Rp</span>
+              <span class="amount">{{ "{:,.0f}".format(total or 0) }}</span>
+            </div>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <!-- ===== FOOTER ===== -->
+    <div class="footer">
+      <p>
+        Terima kasih atas kepercayaan Anda.<br><br>
+        Hormat kami,<br><br><br>
+        <strong>SCS EkspedisiKu</strong>
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>

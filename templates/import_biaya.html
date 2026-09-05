@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Import Biaya Operasional{% endblock %}
+{% block content %}
+<h2>📥 Import Biaya Operasional dari Excel</h2>
+<div class="alert alert-info">
+  <strong>Format kolom yang diharapkan:</strong><br>
+  <code>Tanggal (format: MM-DD-YYYY), Jenis (UPG/PLP/PRE/ASKARINDO), Keterangan, Jumlah</code><br>
+  <small>Kolom Jenis dan Keterangan bisa kosong.</small>
+</div>
+<form method="POST" enctype="multipart/form-data">
+  <div class="mb-3">
+    <label class="form-label">Pilih file Excel (.xlsx)</label>
+    <input type="file" name="file" class="form-control" accept=".xlsx" required>
+  </div>
+  <button type="submit" class="btn btn-success">Import</button>
+  <a href="{{ url_for('biaya_operasional') }}" class="btn btn-secondary">Batal</a>
+</form>
+{% endblock %}

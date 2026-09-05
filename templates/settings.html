@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Pengaturan{% endblock %}
+{% block content %}
+<h2>⚙️ Pengaturan Aplikasi</h2>
+<form method="POST">
+  {{ form.hidden_tag() }}
+  <div class="card mb-4">
+    <div class="card-header">Metode Cetak Resi</div>
+    <div class="card-body">
+      <div class="mb-3">
+        {{ form.print_method.label(class="form-label") }}
+        {{ form.print_method(class="form-select") }}
+        <small class="text-muted">Pilih "Browser" untuk cetak langsung, "PDF" jika wkhtmltopdf sudah terinstal.</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header">Format Nomor Resi</div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          {{ form.resi_prefix.label(class="form-label") }}
+          {{ form.resi_prefix(class="form-control", placeholder="Contoh: SCS-") }}
+        </div>
+        <div class="col-md-4">
+          {{ form.resi_date_format.label(class="form-label") }}
+          {{ form.resi_date_format(class="form-select") }}
+        </div>
+        <div class="col-md-4">
+          {{ form.resi_counter_length.label(class="form-label") }}
+          {{ form.resi_counter_length(class="form-control") }}
+        </div>
+      </div>
+      <div class="mt-2 text-muted">
+        <small>Contoh format: <span id="contoh-resi">-</span></small>
+      </div>
+    </div>
+  </div>
+
+  <!-- BAGIAN BARU: INFORMASI PERUSAHAAN -->
+  <div class="card mb-4">
+    <div class="card-header">Informasi Perusahaan</div>
+    <div class="card-body">
+      <div class="mb-3">
+        {{ form.company_address.label(class="form-label") }}
+        {{ form.company_address(class="form-control") }}
+      </div>
+      <div class="mb-3">
+        {{ form.company_phone.label(class="form-label") }}
+        {{ form.company_phone(class="form-control") }}
+      </div>
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-primary">Simpan Pengaturan</button>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+  function updatePreview() {
+    let prefix = $('#resi_prefix').val();
+    let dateFormat = $('#resi_date_format').val();
+    let counterLength = parseInt($('#resi_counter_length').val()) || 4;
+    let now = new Date();
+    let dateStr = '';
+    switch(dateFormat) {
+      case '%Y%m%d': dateStr = now.getFullYear() + ('0'+(now.getMonth()+1)).slice(-2) + ('0'+now.getDate()).slice(-2); break;
+      case '%d%m%Y': dateStr = ('0'+now.getDate()).slice(-2) + ('0'+(now.getMonth()+1)).slice(-2) + now.getFullYear(); break;
+      case '%y%m%d': dateStr = String(now.getFullYear()).slice(-2) + ('0'+(now.getMonth()+1)).slice(-2) + ('0'+now.getDate()).slice(-2); break;
+    }
+    let numberPart = '1'.padStart(counterLength, '0');
+    $('#contoh-resi').text(prefix + dateStr + '-' + numberPart);
+  }
+  $('#resi_prefix, #resi_date_format, #resi_counter_length').on('input change', updatePreview);
+  $(updatePreview);
+</script>
+{% endblock %}

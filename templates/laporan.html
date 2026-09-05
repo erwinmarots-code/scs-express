@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+{% block title %}Laporan Operasional{% endblock %}
+{% block content %}
+<h2>📊 Laporan Operasional</h2>
+
+<!-- Filter Global -->
+<form method="GET" class="row g-3 mb-4" id="filterGlobal">
+  <div class="col-md-3">
+    <label class="form-label">Tanggal Mulai</label>
+    <input type="date" name="tgl_mulai" class="form-control" value="{{ request.args.get('tgl_mulai', '') }}">
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Tanggal Akhir</label>
+    <input type="date" name="tgl_akhir" class="form-control" value="{{ request.args.get('tgl_akhir', '') }}">
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Perusahaan</label>
+    <select name="perusahaan" class="form-select">
+      <option value="">-- Semua --</option>
+      {% for p in perusahaan_list %}
+        <option value="{{ p }}" {% if request.args.get('perusahaan') == p %}selected{% endif %}>{{ p }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Keyword</label>
+    <input type="text" name="search" class="form-control" placeholder="Nama/Resi/Perusahaan" value="{{ request.args.get('search', '') }}">
+  </div>
+  <div class="col-md-1 d-flex align-items-end">
+    <button type="submit" class="btn btn-danger w-100">Filter</button>
+  </div>
+</form>
+
+<!-- Tab Navigasi -->
+<ul class="nav nav-tabs mb-4" id="laporanTabs">
+  <li class="nav-item">
+    <button class="nav-link active" id="pengiriman-tab" data-bs-toggle="tab" data-bs-target="#pengiriman" type="button" role="tab">Pengiriman</button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" id="update-tab" data-bs-toggle="tab" data-bs-target="#update" type="button" role="tab">Update Status</button>
+  </li>
+  {% if current_user.role == 'admin' %}
+  <li class="nav-item">
+    <button class="nav-link" id="keuangan-tab" data-bs-toggle="tab" data-bs-target="#keuangan" type="button" role="tab">Keuangan</button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" id="setoran-tab" data-bs-toggle="tab" data-bs-target="#setoran" type="button" role="tab">Setoran Ongkir</button>
+  </li>
+  {% endif %}
+</ul>
+
+<div class="tab-content">
+  <!-- Tab Pengiriman -->
+  <div class="tab-pane fade show active" id="pengiriman" role="tabpanel">
+    <div class="table-responsive">
+      <table id="tabelLaporan" class="table table-striped table-hover">
+        <thead>
+          <tr>
+            <th>Resi</th>
+            <th>Tgl Pickup</th>
+            <th>Pengirim</th>
+            <th>Perusahaan</th>
+            <th>Penerima</th>
+            <th>Perusahaan</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in data %}
+          <tr>
+            <td>{{ p.nomor_resi }}</td>
+            <td>{{ p.tgl_pickup.strftime('%d/%m/%Y') if p.tgl_pickup else '-' }}</td>
+            <td>{{ p.pengirim.nama if p.pengirim else '-' }}</td>
+            <td>{{ p.pengirim.perusahaan if p.pengirim and p.pengirim.perusahaan else '-' }}</td>
+            <td>{{ p.penerima.nama if p.penerima else '-' }}</td>
+            <td>{{ p.penerima.perusahaan if p.penerima and p.penerima.perusahaan else '-' }}</td>
+            <td>Rp {{ "{:,.0f}".format(p.total_biaya) }}</td>
+            <td>
+              <span class="badge bg-{{ 'success' if p.status == 'sukses' else 'warning' if p.status == 'hold' else 'danger' if p.status == 'retur' else 'secondary' }}">
+                {% if p.status == 'pending' %}Manifested{% elif p.status == 'hold' %}TOP{% elif p.status == 'retur' %}Free Ship.{% else %}{{ p.status }}{% endif %}
+              </span>
+            </td>
+            <td>
+              <form method="POST" action="{{ url_for('update_status', id=p.id) }}" class="d-flex">
+                <select name="status" class="form-select form-select-sm me-1" style="width:100px;">
+                  {% if current_user.role == 'admin' %}
+                    <option value="pending" {% if p.status == 'pending' %}selected{% endif %}>Manifested</option>
+                    <option value="sukses" {% if p.status == 'sukses' %}selected{% endif %}>Sukses</option>
+                    <option value="hold" {% if p.status == 'hold' %}selected{% endif %}>TOP</option>
+                    <option value="retur" {% if p.status == 'retur' %}selected{% endif %}>Free Ship.</option>
+                  {% else %}
+                    <option value="sukses">Sukses</option>
+                  {% endif %}
+                </select>
+                <button type="submit" class="btn btn-sm btn-secondary">Update</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+          <!-- TIDAK ADA BARIS KOSONG DENGAN COLSPAN -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tab Update Status Multiple -->
+  <div class="tab-pane fade" id="update" role="tabpanel">
+    <h4>Update Status Pengiriman (Multiple)</h4>
+    <div class="row g-3 mb-3">
+      <div class="col-md-3">
+        <label class="form-label">Tampilkan Status</label>
+        <select id="filterStatusUpdate" class="form-select">
+          <option value="">-- Semua --</option>
+          {% if current_user.role == 'admin' %}
+            <option value="pending">Manifested</option>
+            <option value="sukses">Sukses</option>
+            <option value="hold">TOP</option>
+            <option value="retur">Free Ship.</option>
+          {% else %}
+            <option value="sukses">Sukses</option>
+          {% endif %}
+        </select>
+      </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('update_status_multiple') }}">
+      <div class="row g-3 mb-3">
+        <div class="col-md-3">
+          <label class="form-label">Ubah ke Status</label>
+          <select name="status_baru" class="form-select">
+            {% if current_user.role == 'admin' %}
+              <option value="pending">Manifested</option>
+              <option value="sukses">Sukses</option>
+              <option value="hold">TOP</option>
+              <option value="retur">Free Ship.</option>
+            {% else %}
+              <option value="sukses">Sukses</option>
+            {% endif %}
+          </select>
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+          <button type="submit" class="btn btn-danger w-100">Update Terpilih</button>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="selectAllUpdate"></th>
+              <th>Resi</th>
+              <th>Tgl Pickup</th>
+              <th>Pengirim</th>
+              <th>Perusahaan</th>
+              <th>Penerima</th>
+              <th>Total</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="updateTableBody">
+            {% for p in data %}
+            <tr class="update-row" data-status="{{ p.status }}">
+              <td><input type="checkbox" name="selected_ids" value="{{ p.id }}" class="update-check"></td>
+              <td>{{ p.nomor_resi }}</td>
+              <td>{{ p.tgl_pickup.strftime('%d/%m/%Y') if p.tgl_pickup else '-' }}</td>
+              <td>{{ p.pengirim.nama if p.pengirim else '-' }}</td>
+              <td>{{ p.pengirim.perusahaan if p.pengirim and p.pengirim.perusahaan else '-' }}</td>
+              <td>{{ p.penerima.nama if p.penerima else '-' }}</td>
+              <td>Rp {{ "{:,.0f}".format(p.total_biaya) }}</td>
+              <td>
+                <span class="badge bg-{{ 'success' if p.status == 'sukses' else 'warning' if p.status == 'hold' else 'danger' if p.status == 'retur' else 'secondary' }}">
+                  {% if p.status == 'pending' %}Manifested{% elif p.status == 'hold' %}TOP{% elif p.status == 'retur' %}Free Ship.{% else %}{{ p.status }}{% endif %}
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </form>
+  </div>
+
+  {% if current_user.role == 'admin' %}
+  <!-- Tab Keuangan -->
+  <div class="tab-pane fade" id="keuangan" role="tabpanel">
+    <div class="row g-4 mb-4">
+      <div class="col-md-4">
+        <div class="card text-white bg-success mb-3">
+          <div class="card-body">
+            <h5>💵 Uang Masuk (Sukses & Diverifikasi)</h5>
+            <p class="display-6">Rp {{ "{:,.0f}".format(uang_masuk) if uang_masuk is defined else "0" }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card text-white bg-danger mb-3">
+          <div class="card-body">
+            <h5>🧾 Biaya Operasional</h5>
+            <p class="display-6">Rp {{ "{:,.0f}".format(biaya_total) if biaya_total is defined else "0" }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card text-white bg-{{ 'success' if laba_rugi is defined and laba_rugi >= 0 else 'danger' }} mb-3">
+          <div class="card-body">
+            <h5>📈 Laba/Rugi</h5>
+            <p class="display-6">Rp {{ "{:,.0f}".format(laba_rugi) if laba_rugi is defined else "0" }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between mb-3">
+      <h4>📋 Daftar Biaya Operasional</h4>
+      <div>
+        <a href="{{ url_for('export_keuangan', tgl_mulai=request.args.get('tgl_mulai'), tgl_akhir=request.args.get('tgl_akhir')) }}" class="btn btn-success me-2">📥 Ekspor Laporan Keuangan (Excel)</a>
+        <a href="{{ url_for('biaya_operasional') }}" class="btn btn-primary">➕ Input Pengeluaran</a>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-striped table-hover">
+        <thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Jenis</th>
+            <th>Keterangan</th>
+            <th>Jumlah</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if biaya_list %}
+            {% for b in biaya_list %}
+            <tr>
+              <td>{{ b.tanggal.strftime('%d/%m/%Y') if b.tanggal else '-' }}</td>
+              <td>{{ b.jenis or '-' }}</td>
+              <td>{{ b.keterangan or '-' }}</td>
+              <td>Rp {{ "{:,.0f}".format(b.jumlah) if b.jumlah else "0" }}</td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="4" class="text-center">Belum ada biaya operasional.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tab Setoran Ongkir -->
+  <div class="tab-pane fade" id="setoran" role="tabpanel">
+    <p><a href="{{ url_for('setoran_ongkir') }}" class="btn btn-primary">Lihat Setoran Ongkir</a></p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  $(document).ready(function() {
+    if ($('#tabelLaporan').length && $.fn.DataTable) {
+      $('#tabelLaporan').DataTable({
+        "language": {
+          "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json"
+        }
+      });
+    }
+
+    $('#filterStatusUpdate').on('change', function() {
+      var status = $(this).val();
+      if (status === '') {
+        $('.update-row').show();
+      } else {
+        $('.update-row').hide();
+        $('.update-row[data-status="' + status + '"]').show();
+      }
+    });
+
+    $('#selectAllUpdate').on('change', function() {
+      $('.update-row:visible .update-check').prop('checked', this.checked);
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Resi - SCS EkspedisiKu</title>
+  <style>
+    @page { size: 215mm 110mm; margin: 0; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; font-size: 10px; width: 215mm; height: 110mm; }
+    .resi-box { border: 1px solid #000; padding: 2mm; width: 100%; height: 100%; page-break-after: always; display: flex; flex-direction: column; justify-content: space-between; }
+    .header { text-align: center; font-weight: bold; font-size: 16px; margin-bottom: 0.5mm; }
+    .top-row { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.5mm; }
+    .logo img { height: auto; width: 34mm; }
+    .company-info { font-size: 7px; margin-top: 0.5mm; line-height: 1.2; }
+    .barcode { width: 54mm; height: 10mm; overflow: hidden; text-align: center; }
+    .barcode img { width: 54mm; display: block; }
+    .content-row { display: flex; gap: 2mm; flex: 1; margin-top: 1mm; }
+    .left-col, .right-col { flex: 1; }
+    table { width: 100%; border-collapse: collapse; margin-top: 0.3mm; font-size: 10px; }
+    td, th { padding: 0.3mm 0.6mm; border: 1px solid #ccc; }
+    .section-title { font-weight: bold; font-size: 11px; margin-top: 0.5mm; border-bottom: 1px solid #eee; }
+    .total-biaya { font-size: 12px; font-weight: bold; background: #f5f5f5; }
+    .ttd { display: flex; justify-content: space-between; margin-top: 2mm; font-size: 10px; }
+    .ttd-box { width: 25%; border-top: 1px dashed #000; padding-top: 0.5mm; text-align: center; }
+    .keterangan { margin-top: 1mm; border-top: 1px solid #ccc; padding-top: 0.5mm; }
+    .nama-perusahaan { font-weight: bold; }
+  </style>
+</head>
+<body>
+  {% for p in daftar %}
+  <div class="resi-box">
+    <!-- konten sama persis dengan resi_print.html, hanya tanpa div.no-print -->
+    <!-- salin seluruh isi resi-box dari resi_print.html di sini -->
+  </div>
+  {% endfor %}
+</body>
+</html>

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Transaksi Pelanggan{% endblock %}
+{% block content %}
+<h2>🔍 Transaksi Pelanggan</h2>
+<form method="GET" class="row g-3 mb-4">
+  <div class="col-md-4">
+    <label class="form-label">Pilih Pelanggan</label>
+    <select name="pelanggan_id" class="form-select">
+      <option value="">-- Pilih --</option>
+      {% for pl in semua_pelanggan %}
+      <option value="{{ pl.id }}" {% if pelanggan and pelanggan.id == pl.id %}selected{% endif %}>{{ pl.nama }} ({{ pl.tipe }})</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2 d-flex align-items-end">
+    <button type="submit" class="btn btn-danger">Cari</button>
+  </div>
+</form>
+
+{% if pelanggan %}
+<h4>Transaksi {{ pelanggan.nama }}</h4>
+<div class="table-responsive">
+  <table class="table">
+    <thead><tr><th>Resi</th><th>Tgl Pickup</th><th>Kota Asal</th><th>Kota Tujuan</th><th>Total</th><th>Pembayaran</th></tr></thead>
+    <tbody>
+      {% for p in pengiriman %}
+      <tr>
+        <td>{{ p.nomor_resi }}</td>
+        <td>{{ p.tgl_pickup.strftime('%d/%m/%Y') if p.tgl_pickup else '' }}</td>
+        <td>{{ p.kota_asal }}</td>
+        <td>{{ p.kota_tujuan }}</td>
+        <td>Rp {{ "{:,.0f}".format(p.total_biaya) }}</td>
+        <td>{{ p.metode_pembayaran }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center">Tidak ada transaksi.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

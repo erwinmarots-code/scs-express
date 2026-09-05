@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Edit Pelanggan{% endblock %}
+{% block content %}
+<h2>✏️ Edit Pelanggan</h2>
+<form method="POST">
+  {{ form.hidden_tag() }}
+  <div class="row g-3">
+    <div class="col-md-4">
+      <label class="form-label">Tipe</label>
+      {{ form.tipe(class="form-select") }}
+    </div>
+    <div class="col-md-8">
+      <label class="form-label">Nama</label>
+      {{ form.nama(class="form-control") }}
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Perusahaan</label>
+      {{ form.perusahaan(class="form-control") }}
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">No. Telepon</label>
+      {{ form.no_telp(class="form-control") }}
+    </div>
+    <div class="col-12">
+      <label class="form-label">Alamat</label>
+      {{ form.alamat(class="form-control", rows="2") }}
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Kode Kota</label>
+      {{ form.kode_kota(class="form-control") }}
+    </div>
+  </div>
+  <button type="submit" class="btn btn-primary mt-3">Simpan Perubahan</button>
+  <a href="{{ url_for('pelanggan_list') }}" class="btn btn-secondary mt-3">Batal</a>
+</form>
+{% endblock %}

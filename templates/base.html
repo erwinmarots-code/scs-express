@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}EkspedisiKu{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+  <!-- Font Awesome untuk Ikon -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- Google Font Poppins -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+  <!-- PWA -->
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register("{{ url_for('static', filename='service-worker.js') }}");
+    }
+  </script>
+  <meta name="theme-color" content="#dc3545">
+  <style>
+    :root {
+      --primary: #dc3545;
+      --primary-dark: #b02a37;
+      --secondary: #6c757d;
+      --success: #198754;
+      --info: #0dcaf0;
+      --warning: #ffc107;
+      --danger: #dc3545;
+      --light: #f8f9fa;
+      --dark: #212529;
+      --font: 'Poppins', sans-serif;
+    }
+
+    * {
+      font-family: var(--font);
+    }
+
+    body {
+      background: #f5f7fa;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .navbar-dark.bg-danger {
+      background: linear-gradient(135deg, #dc3545 0%, #b02a37 100%) !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .navbar-brand {
+      font-weight: 600;
+      font-size: 1.3rem;
+    }
+
+    .navbar-brand img {
+      object-fit: cover;
+      border: 2px solid white;
+    }
+
+    .nav-link {
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      transition: all 0.2s ease;
+    }
+
+    .nav-link:hover {
+      transform: translateY(-2px);
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .dropdown-menu {
+      border: none;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .dropdown-item {
+      padding: 8px 20px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .dropdown-item:hover {
+      background: #f8f9fa;
+      padding-left: 25px;
+    }
+
+    .main-container {
+      flex: 1;
+      padding-top: 30px;
+      padding-bottom: 30px;
+    }
+
+    .card {
+      border: none;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+
+    .card-header {
+      background: white;
+      border-bottom: 1px solid #eee;
+      font-weight: 600;
+      font-size: 1rem;
+      padding: 15px 20px;
+    }
+
+    .card-body {
+      padding: 20px;
+    }
+
+    .btn {
+      border-radius: 8px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #dc3545, #b02a37);
+      border: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+      border: none;
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #198754, #146c43);
+      border: none;
+    }
+
+    .table {
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .table thead th {
+      background: #f1f3f5;
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #495057;
+      border-bottom: 2px solid #dee2e6;
+    }
+
+    .table tbody tr {
+      transition: background 0.2s;
+    }
+
+    .table tbody tr:hover {
+      background: #f8f9fa;
+    }
+
+    .badge {
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-weight: 500;
+      font-size: 0.75rem;
+    }
+
+    .footer {
+      background: #343a40;
+      color: #adb5bd;
+      padding: 15px 0;
+      margin-top: auto;
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 768px) {
+      .display-4 {
+        font-size: 2rem;
+      }
+      .navbar-brand {
+        font-size: 1.1rem;
+      }
+    }
+
+    /* Tambahan agar jarak antar item navbar lebih nyaman */
+    .navbar-nav .nav-link {
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <nav class="navbar navbar-expand-xl navbar-dark bg-danger">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center" href="{{ url_for('dashboard') }}">
+        <div style="background-color: white; padding: 4px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 10px;">
+          <img src="{{ url_for('static', filename='logo.png') }}" alt="SCS" width="40" height="40" style="object-fit: contain; border-radius: 50%;">
+        </div>
+        <span>EkspedisiKu</span>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <!-- Dashboard -->
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('dashboard') }}">
+              <i class="fas fa-chart-line me-1"></i> Dashboard
+            </a>
+          </li>
+
+          <!-- Input Barang (admin, petugas, kurir) -->
+          {% if current_user.role in ['admin', 'petugas', 'kurir'] %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('input_barang') }}">
+              <i class="fas fa-plus-circle me-1"></i> Input
+            </a>
+          </li>
+          {% endif %}
+
+          <!-- Dropdown Data (khusus admin) -->
+          {% if current_user.role == 'admin' %}
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+              <i class="fas fa-database me-1"></i> Data
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="{{ url_for('data_barang') }}"><i class="fas fa-database me-2"></i>Data Pengiriman</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('pelanggan_list') }}"><i class="fas fa-users me-2"></i>Pelanggan</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{{ url_for('cetak_resi') }}"><i class="fas fa-print me-2"></i>Cetak Resi</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('invoice') }}"><i class="fas fa-file-invoice me-2"></i>Invoice</a></li>
+            </ul>
+          </li>
+          {% endif %}
+
+          <!-- Dropdown Laporan (admin & kurir) -->
+          {% if current_user.role in ['admin', 'kurir'] %}
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+              <i class="fas fa-file-alt me-1"></i> Laporan
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="{{ url_for('laporan') }}"><i class="fas fa-file-alt me-2"></i>Laporan Operasional</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('daily_delivery') }}"><i class="fas fa-truck me-2"></i>Daily Delivery</a></li>
+            </ul>
+          </li>
+          {% endif %}
+
+          <!-- Dropdown Pengaturan (khusus admin) -->
+          {% if current_user.role == 'admin' %}
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+              <i class="fas fa-cog me-1"></i> Pengaturan
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="{{ url_for('settings') }}"><i class="fas fa-sliders-h me-2"></i>Umum</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('change_password') }}"><i class="fas fa-key me-2"></i>Ubah Password</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('user_list') }}"><i class="fas fa-user-cog me-2"></i>Manajemen User</a></li>
+            </ul>
+          </li>
+          {% endif %}
+
+          <!-- Logout -->
+          <li class="nav-item">
+            <a class="nav-link text-warning" href="{{ url_for('logout') }}">
+              <i class="fas fa-sign-out-alt me-1"></i> Logout
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container main-container">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for msg in messages %}
+          <div class="alert alert-info alert-dismissible fade show shadow-sm" role="alert">
+            <i class="fas fa-info-circle me-2"></i>{{ msg }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </div>
+
+  <footer class="footer text-center">
+    <div class="container">
+      <span>© 2026 SCS EkspedisiKu - Internal Use Only</span>
+    </div>
+  </footer>
+
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

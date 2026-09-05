@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Biaya Operasional{% endblock %}
+{% block content %}
+<h2>💰 Biaya Operasional</h2>
+
+<!-- Tombol Tambah & Import -->
+<div class="mb-3">
+    <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#formBiaya">
+        ➕ Tambah Biaya
+    </button>
+    <button class="btn btn-success" onclick="document.getElementById('importForm').style.display='block'">
+        📥 Import Excel
+    </button>
+</div>
+
+<!-- Form Tambah Biaya -->
+<div class="collapse {% if form.errors %}show{% endif %}" id="formBiaya">
+    <div class="card card-body mb-3">
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            <div class="row g-2">
+                <div class="col-md-3">
+                    {{ form.tanggal.label(class="form-label") }}
+                    {{ form.tanggal(class="form-control", type="date") }}
+                </div>
+                <div class="col-md-2">
+                    {{ form.jenis.label(class="form-label") }}
+                    {{ form.jenis(class="form-select") }}
+                </div>
+                <div class="col-md-3">
+                    {{ form.keterangan.label(class="form-label") }}
+                    {{ form.keterangan(class="form-control") }}
+                </div>
+                <div class="col-md-2">
+                    {{ form.jumlah.label(class="form-label") }}
+                    {{ form.jumlah(class="form-control") }}
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-danger w-100">Simpan</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Form Import Excel -->
+<div id="importForm" style="display:none;" class="card card-body mb-3">
+    <form method="POST" enctype="multipart/form-data" action="{{ url_for('import_biaya') }}">
+        <div class="row g-2">
+            <div class="col-md-6">
+                <input type="file" name="file" class="form-control" accept=".xlsx,.xls" required>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-success">Import</button>
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('importForm').style.display='none'">Batal</button>
+            </div>
+        </div>
+        <small class="text-muted">Format: Tanggal, Jenis, Keterangan, Jumlah</small>
+    </form>
+</div>
+
+<!-- Tabel Data Biaya -->
+<div class="table-responsive mt-3">
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Tanggal</th>
+                <th>Jenis</th>
+                <th>Keterangan</th>
+                <th>Jumlah</th>
+                <th>Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for b in biaya_list %}
+            <tr>
+                <td>{{ b.tanggal.strftime('%d/%m/%Y') if b.tanggal else '-' }}</td>
+                <td>{{ b.jenis or '-' }}</td>
+                <td>{{ b.keterangan or '-' }}</td>
+                <td>Rp {{ "{:,.0f}".format(b.jumlah) }}</td>
+                <td>
+                    <a href="{{ url_for('edit_biaya', id=b.id) }}" class="btn btn-sm btn-info">Edit</a>
+                    <form action="{{ url_for('hapus_biaya', id=b.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Yakin hapus?')">
+                        <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center">Belum ada biaya operasional.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

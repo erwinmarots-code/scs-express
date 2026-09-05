@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Daily Delivery Sheet{% endblock %}
+{% block content %}
+<h2>📋 Daily Delivery Sheet</h2>
+
+<!-- Filter Tanggal -->
+<form method="GET" class="row g-3 mb-4">
+  <div class="col-md-3">
+    <label class="form-label">Tanggal Pickup</label>
+    <input type="date" name="tanggal" class="form-control" value="{{ tanggal.strftime('%Y-%m-%d') }}">
+  </div>
+  <div class="col-md-2 d-flex align-items-end">
+    <button type="submit" class="btn btn-danger w-100">Tampilkan</button>
+  </div>
+  <div class="col-md-2 d-flex align-items-end">
+    <a href="{{ url_for('daily_delivery') }}" class="btn btn-outline-secondary w-100">Hari Ini</a>
+  </div>
+</form>
+
+<!-- Ringkasan -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card text-white bg-success">
+      <div class="card-body">
+        <h5>Total Cash</h5>
+        <p class="display-6">Rp {{ "{:,.0f}".format(total_cash) }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card text-white bg-info">
+      <div class="card-body">
+        <h5>Total Credit</h5>
+        <p class="display-6">Rp {{ "{:,.0f}".format(total_credit) }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card text-white bg-danger">
+      <div class="card-body">
+        <h5>Total Free Ship</h5>
+        <p class="display-6">Rp {{ "{:,.0f}".format(total_free_ship) }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tabel Pengiriman -->
+<div class="table-responsive">
+  <table class="table table-striped table-hover">
+    <thead>
+      <tr>
+        <th>No. Resi</th>
+        <th>Pengirim</th>
+        <th>Alamat Pengirim</th>
+        <th>Penerima</th>
+        <th>Alamat Penerima</th>
+        <th>Total</th>
+        <th>Metode</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in pengiriman_hari_ini %}
+      <tr>
+        <td>{{ p.nomor_resi }}</td>
+        <td>{{ p.pengirim.nama if p.pengirim else '-' }}</td>
+        <td>{{ p.pengirim.alamat if p.pengirim and p.pengirim.alamat else '-' }}</td>
+        <td>{{ p.penerima.nama if p.penerima else '-' }}</td>
+        <td>{{ p.penerima.alamat if p.penerima and p.penerima.alamat else '-' }}</td>
+        <td>Rp {{ "{:,.0f}".format(p.total_biaya) }}</td>
+        <td>{{ p.metode_pembayaran }}</td>
+        <td>{{ p.status }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="8" class="text-center">Tidak ada pengiriman.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
